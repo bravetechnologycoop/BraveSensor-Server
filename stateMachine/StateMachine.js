@@ -6,11 +6,13 @@ const DOOR_STATUS = require('../SessionStateDoorEnum')
 const STATE = require('./SessionStateEnum')
 
 async function getNextState(location, handleAlert) {
+
   try {
     let state
+    let transaction = redis.multi()
     // await redis.beginTransaction()
-    const door = await redis.getLatestDoorSensorData(location.locationid)
-    const stateData = await redis.getLatestState(location.locationid)
+    const door = await transaction.getLatestDoorSensorData(location.locationid)
+    const stateData = await transaction.getLatestState(location.locationid)
     if (!stateData) {
       state = null
     } else {
@@ -25,21 +27,21 @@ async function getNextState(location, handleAlert) {
     switch (state) {
       case STATE.IDLE:
         if (door.signal === DOOR_STATUS.CLOSED && movementOverThreshold) {
-          await redis.addStateMachineData(STATE.INITIAL_TIMER, location.locationid)
+          await transaction.addStateMachineData(STATE.INITIAL_TIMER, location.locationid)
         }
         break
       case STATE.INITIAL_TIMER:
         if (door.signal === DOOR_STATUS.OPEN || !movementOverThreshold) {
-          await redis.addStateMachineData(STATE.IDLE, location.locationid)
+          await transaction.addStateMachineData(STATE.IDLE, location.locationid)
         } else if (await stateMachineHelpers.timerExceeded(location.locationid, parseInt(location.initialTimer, 10), STATE.INITIAL_TIMER)) {
-          await redis.addStateMachineData(STATE.DURATION_TIMER, location.locationid)
+          await transaction.addStateMachineData(STATE.DURATION_TIMER, location.locationid)
         }
         break
       case STATE.DURATION_TIMER:
         if (door.signal === DOOR_STATUS.OPEN) {
-          await redis.addStateMachineData(STATE.IDLE, location.locationid)
+          await transaction.addStateMachineData(STATE.IDLE, location.locationid)
         } else if (!movementOverThreshold) {
-          await redis.addStateMachineData(STATE.STILLNESS_TIMER, location.locationid)
+          await transaction.addStateMachineData(STATE.STILLNESS_TIMER, location.locationid)
         } else if (
           await stateMachineHelpers.timerExceeded(
             location.locationid,
@@ -48,17 +50,17 @@ async function getNextState(location, handleAlert) {
           )
         ) {
           await handleAlert(location, ALERT_REASON.DURATION)
-          await redis.addStateMachineData(STATE.IDLE, location.locationid)
+          await transaction.addStateMachineData(STATE.IDLE, location.locationid)
         }
         break
       case STATE.STILLNESS_TIMER:
         if (door.signal === DOOR_STATUS.OPEN) {
-          await redis.addStateMachineData(STATE.IDLE, location.locationid)
+          await transaction.addStateMachineData(STATE.IDLE, location.locationid)
         } else if (movementOverThreshold) {
-          await redis.addStateMachineData(STATE.DURATION_TIMER, location.locationid)
+          await transaction.addStateMachineData(STATE.DURATION_TIMER, location.locationid)
         } else if (await stateMachineHelpers.timerExceeded(location.locationid, parseInt(location.stillnessTimer, 10), STATE.STILLNESS_TIMER)) {
           await handleAlert(location, ALERT_REASON.STILLNESS)
-          await redis.addStateMachineData(STATE.IDLE, location.locationid)
+          await transaction.addStateMachineData(STATE.IDLE, location.locationid)
         } else if (
           await stateMachineHelpers.timerExceeded(
             location.locationid,
@@ -67,16 +69,16 @@ async function getNextState(location, handleAlert) {
           )
         ) {
           await handleAlert(location, ALERT_REASON.DURATION)
-          await redis.addStateMachineData(STATE.IDLE, location.locationid)
+          await transaction.addStateMachineData(STATE.IDLE, location.locationid)
         }
         break
       default:
-        await redis.addStateMachineData(STATE.IDLE, location.locationid)
+        await transaction.addStateMachineData(STATE.IDLE, location.locationid)
         break
     }
+    transaction.exec((err) => {`Error in redis transaction: ${err}`})
   } catch (err) {
     helpers.log(`Error in StateMachine.getNextState(): ${err}`)
-    // await redis.rollbackTransaction()
   }
 }
 
