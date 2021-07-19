@@ -14,6 +14,7 @@ class BraveAlerterConfigurator {
       this.getAlertSessionByPhoneNumber.bind(this),
       this.alertSessionChangedCallback.bind(this),
       this.getLocationByAlertApiKey.bind(this),
+      this.getHistoricAlertsByAlertApiKey.bind(this),
       false,
       this.getReturnMessage.bind(this),
     )
@@ -94,6 +95,10 @@ class BraveAlerterConfigurator {
     // Even if there is more than one matching location, we only return one and it will
     // be used by the Alert App to indentify this location
     return new Location(locations[0].locationid, SYSTEM.SENSOR)
+  }
+
+  async getHistoricAlertsByAlertApiKey() {
+    return null
   }
 
   getReturnMessage(fromAlertState, toAlertState) {

@@ -25,7 +25,7 @@ pool.on('error', err => {
 
 function createSessionFromRow(r) {
   // prettier-ignore
-  return new Session(r.id, r.locationid, r.phone_number, r.chatbot_state, r.alert_reason, r.created_at, r.updated_at, r.incident_type, r.notes)
+  return new Session(r.id, r.locationid, r.phone_number, r.chatbot_state, r.alert_type, r.created_at, r.updated_at, r.incident_type, r.notes)
 }
 
 function createLocationFromRow(r) {
@@ -205,12 +205,12 @@ async function getAllSessionsFromLocation(locationid, clientParam) {
 }
 
 // Creates a new session for a specific location
-async function createSession(locationid, phoneNumber, alertReason, clientParam) {
+async function createSession(locationid, phoneNumber, alertType, clientParam) {
   try {
     const results = await runQuery(
       'createSession',
-      'INSERT INTO sessions(locationid, phone_number, alert_reason, chatbot_state) VALUES ($1, $2, $3, $4) RETURNING *',
-      [locationid, phoneNumber, alertReason, ALERT_STATE.STARTED],
+      'INSERT INTO sessions(locationid, phone_number, alert_type, chatbot_state) VALUES ($1, $2, $3, $4) RETURNING *',
+      [locationid, phoneNumber, alertType, ALERT_STATE.STARTED],
       clientParam,
     )
     return createSessionFromRow(results.rows[0])
