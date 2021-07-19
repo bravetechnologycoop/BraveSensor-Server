@@ -16,6 +16,7 @@ the code was deployed.
 - Endpoint for firmware state machine alerts (CU-v9ae26).
 - Storing and checking firmware state machine heartbeat messages (CU-v9ae26).
 - Alert Type to the Dashboard.
+- Tracking of when sessions are first responded to (CU-hjwfx2).
 
 ### Changed
 
