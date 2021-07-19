@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 // In-house dependencies
-const { BraveAlerter, AlertSession, ALERT_STATE, helpers, Location, SYSTEM } = require('brave-alert-lib')
+const { BraveAlerter, AlertSession, ALERT_STATE, helpers, HistoricAlert, Location, SYSTEM } = require('brave-alert-lib')
 const db = require('./db/db')
 
 const incidentTypes = ['No One Inside', 'Person responded', 'Overdose', 'None of the above']
@@ -108,8 +108,21 @@ class BraveAlerterConfigurator {
     return new Location(locations[0].locationid, SYSTEM.SENSOR)
   }
 
-  async getHistoricAlertsByAlertApiKey() {
-    return null
+  createHistoricAlertFromRow(row) {
+    return new HistoricAlert(row.id, row.display_name, row.incident_type, row.alert_type, null, row.created_at, row.responded_at)
+  }
+
+  // Historic Alerts are those with status "Completed" or that were last updated longer ago than the SUBSEQUENT_ALERT_MESSAGE_THRESHOLD
+  async getHistoricAlertsByAlertApiKey(alertApiKey, maxHistoricAlerts) {
+    const maxTimeAgoInMillis = helpers.getEnvVar('SUBSEQUENT_ALERT_MESSAGE_THRESHOLD') * 1000
+
+    const historicAlerts = await db.getHistoricAlertsByAlertApiKey(alertApiKey, maxHistoricAlerts, maxTimeAgoInMillis)
+
+    if (!Array.isArray(historicAlerts)) {
+      return null
+    }
+
+    return historicAlerts.map(this.createHistoricAlertFromRow)
   }
 
   getReturnMessage(fromAlertState, toAlertState) {
