@@ -14,6 +14,7 @@ class BraveAlerterConfigurator {
       this.getAlertSessionByPhoneNumber.bind(this),
       this.alertSessionChangedCallback.bind(this),
       this.getLocationByAlertApiKey.bind(this),
+      this.getHistoricAlertsByAlertApiKey.bind(this),
       false,
       this.getReturnMessage.bind(this),
     )
@@ -66,8 +67,19 @@ class BraveAlerterConfigurator {
       const session = await db.getSessionWithSessionId(alertSession.sessionId, client)
 
       if (session) {
-        const incidentType = incidentTypes[incidentTypeKeys.indexOf(alertSession.incidentCategoryKey)]
-        await db.saveAlertSession(alertSession.alertState, incidentType, alertSession.sessionId, client)
+        if (alertSession.alertState) {
+          session.chatbotState = alertSession.alertState
+        }
+
+        if (alertSession.incidentCategoryKey) {
+          session.incidentType = incidentTypes[incidentTypeKeys.indexOf(alertSession.incidentCategoryKey)]
+        }
+
+        if (alertSession.alertState === ALERT_STATE.WAITING_FOR_CATEGORY) {
+          session.respondedAt = await db.getCurrentTime(client)
+        }
+
+        await db.saveSession(session, client)
       } else {
         helpers.logError(`alertSessionChangedCallback was called for a non-existent session: ${alertSession.sessionId}`)
       }
@@ -94,6 +106,10 @@ class BraveAlerterConfigurator {
     // Even if there is more than one matching location, we only return one and it will
     // be used by the Alert App to indentify this location
     return new Location(locations[0].locationid, SYSTEM.SENSOR)
+  }
+
+  async getHistoricAlertsByAlertApiKey() {
+    return null
   }
 
   getReturnMessage(fromAlertState, toAlertState) {
