@@ -3,7 +3,7 @@ const redis = require('../db/redis')
 const RADAR_TYPE = require('../RadarTypeEnum')
 
 async function movementAverageOverThreshold(radarType, locationid, movementThreshold) {
-  const windowSize = helpers.getEnvVar('RADAR_WINDOW_SIZE_SECONDS')
+  const windowSize = parseInt(helpers.getEnvVar('RADAR_WINDOW_SIZE_SECONDS'), 10)
   if (radarType === RADAR_TYPE.XETHRU) {
     try {
       const xethruHistory = await redis.getXethruTimeWindow(locationid, windowSize) // Array of last 15 readings from this location

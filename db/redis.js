@@ -3,7 +3,6 @@ const Redis = require('ioredis')
 
 // In-house dependencies
 const { helpers } = require('brave-alert-lib')
-const { isTestEnvironment } = require('brave-alert-lib/lib/helpers')
 const DoorData = require('./DoorData')
 const StateData = require('./StateData')
 const XeThruData = require('./XeThruData')
@@ -166,11 +165,7 @@ async function getInnosentWindow(locationID, startTime, endTime, windowLength) {
 async function getInnosentTimeWindow(locationID, windowSize) {
   const windowSizeinMilliseconds = windowSize * 1000
   const currentTime = await getCurrentTimeinMilliseconds()
-  let startTime = currentTime - windowSizeinMilliseconds
-
-  if (isTestEnvironment) {
-    startTime = '-'
-  }
+  const startTime = currentTime - windowSizeinMilliseconds
 
   const rows = await client.xrevrange(`innosent:${locationID}`, '+', startTime)
   const radarStream = rows.map(entry => new InnosentData(entry))
@@ -180,11 +175,7 @@ async function getInnosentTimeWindow(locationID, windowSize) {
 async function getXethruTimeWindow(locationID, windowSize) {
   const windowSizeinMilliseconds = windowSize * 1000
   const currentTime = await getCurrentTimeinMilliseconds()
-  let startTime = currentTime - windowSizeinMilliseconds
-
-  if (isTestEnvironment) {
-    startTime = '-'
-  }
+  const startTime = currentTime - windowSizeinMilliseconds
 
   const rows = await client.xrevrange(`xethru:${locationID}`, '+', startTime)
   const radarStream = rows.map(entry => new XeThruData(entry))
