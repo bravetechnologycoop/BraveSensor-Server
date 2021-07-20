@@ -23,6 +23,8 @@ async function movementAverageOverThreshold(radarType, locationid, movementThres
             return entry.mov_s
           })
           .reduce((a, b) => a + b) / xethruHistory.length
+      helpers.log(`mov_f_avg for ${locationid}: ${mov_f_avg}, mov_s_avg: ${mov_s_avg}`)
+      helpers.log(`averaging over ${xethruHistory.length} entries`)
       return mov_f_avg > movementThreshold || mov_s_avg > movementThreshold
     } catch (error) {
       helpers.logError(`Error computing XeThru Moving Average: ${error}`)
@@ -41,6 +43,8 @@ async function movementAverageOverThreshold(radarType, locationid, movementThres
             return Math.abs(entry.inPhase)
           })
           .reduce((a, b) => a + b) / innosentHistory.length
+      helpers.log(`inPhase avg for ${locationid}: ${inPhase_avg}`)
+      helpers.log(`averaging over ${innosentHistory.length} entries`)
       return inPhase_avg > movementThreshold
     } catch (error) {
       helpers.logError(`Error computing Innosent Moving Average: ${error}`)
